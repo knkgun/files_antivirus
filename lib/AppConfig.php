@@ -11,13 +11,14 @@ namespace OCA\Files_Antivirus;
 use OCP\IConfig;
 
 /**
- * @method string getAvMode()
- * @method string getAvSocket()
- * @method string getAvHost()
- * @method int getAvPort()
- * @method string getAvCmdOptions()
- * @method string getAvPath()
- * @method string getAvInfectedAction()
+ * @method ?string getAvMode()
+ * @method ?string getAvSocket()
+ * @method ?string getAvHost()
+ * @method ?string getAvPort()
+ * @method ?string getAvCmdOptions()
+ * @method ?string getAvPath()
+ * @method ?string getAvInfectedAction()
+ * @method ?string getAvStreamMaxLength()
  *
  * @method null setAvMode(string $avMode)
  * @method null setAvSocket(string $avsocket)
@@ -33,7 +34,7 @@ use OCP\IConfig;
 class AppConfig {
 	private $appName = 'files_antivirus';
 
-	/** @var IConfig  */
+	/** @var IConfig */
 	private $config;
 
 	private $defaults = [
@@ -58,7 +59,7 @@ class AppConfig {
 		$this->config = $config;
 	}
 
-	public function getAvChunkSize() {
+	public function getAvChunkSize(): int {
 		// See http://php.net/manual/en/function.stream-wrapper-register.php#74765
 		// and \OC_Helper::streamCopy
 		return 8192;
@@ -70,6 +71,7 @@ class AppConfig {
 
 	/**
 	 * Get full commandline
+	 *
 	 * @return string
 	 */
 	public function getCmdline() {
@@ -94,9 +96,10 @@ class AppConfig {
 
 	/**
 	 * Get all setting values as an array
+	 *
 	 * @return array
 	 */
-	public function getAllValues() {
+	public function getAllValues(): array {
 		$keys = array_keys($this->defaults);
 		$values = array_map([$this, 'getAppValue'], $keys);
 		$preparedKeys = array_map([$this, 'camelCase'], $keys);
@@ -105,10 +108,11 @@ class AppConfig {
 
 	/**
 	 * Get a value by key
+	 *
 	 * @param string $key
-	 * @return string
+	 * @return ?string
 	 */
-	public function getAppValue($key) {
+	public function getAppValue(string $key): ?string {
 		$defaultValue = null;
 		if (array_key_exists($key, $this->defaults)) {
 			$defaultValue = $this->defaults[$key];
@@ -117,21 +121,26 @@ class AppConfig {
 	}
 
 	/**
-	 * Set a value by key
+	 * 	 * Set a value by key
+	 * 	 *
+	 *
 	 * @param string $key
 	 * @param string $value
 	 */
-	public function setAppValue($key, $value) {
+	public function setAppValue(string $key, string $value): void {
 		$this->config->setAppValue($this->appName, $key, $value);
 	}
 
 	/**
-	 * Set a value with magic __call invocation
+	 * 	 * Set a value with magic __call invocation
+	 * 	 *
+	 *
 	 * @param string $key
 	 * @param array $args
+	 *
 	 * @throws \BadFunctionCallException
 	 */
-	protected function setter($key, $args) {
+	protected function setter(string $key, array $args): void {
 		if (array_key_exists($key, $this->defaults)) {
 			$this->setAppValue($key, $args[0]);
 		} else {
@@ -141,11 +150,12 @@ class AppConfig {
 
 	/**
 	 * Get a value with magic __call invocation
+	 *
 	 * @param string $key
-	 * @return string
+	 * @return ?string
 	 * @throws \BadFunctionCallException
 	 */
-	protected function getter($key) {
+	protected function getter(string $key): ?string {
 		if (array_key_exists($key, $this->defaults)) {
 			return $this->getAppValue($key);
 		}
@@ -155,10 +165,11 @@ class AppConfig {
 
 	/**
 	 * Translates property_name into propertyName
+	 *
 	 * @param string $property
 	 * @return string
 	 */
-	protected function camelCase($property) {
+	protected function camelCase(string $property): string {
 		$split = explode('_', $property);
 		$ucFirst = implode('', array_map('ucfirst', $split));
 		return lcfirst($ucFirst);
@@ -166,15 +177,16 @@ class AppConfig {
 
 	/**
 	 * Does all the someConfig to some_config magic
+	 *
 	 * @param string $property
 	 * @return string
 	 */
-	protected function propertyToKey($property) {
+	protected function propertyToKey(string $property): string {
 		$parts = preg_split('/(?=[A-Z])/', $property);
-		$column = null;
+		$column = '';
 
 		foreach ($parts as $part) {
-			if ($column === null) {
+			if ($column === '') {
 				$column = $part;
 			} else {
 				$column .= '_' . lcfirst($part);
@@ -186,21 +198,23 @@ class AppConfig {
 
 	/**
 	 * Get/set an option value by calling getSomeOption method
+	 *
 	 * @param string $methodName
 	 * @param array $args
-	 * @return string|null
+	 * @return ?string
 	 * @throws \BadFunctionCallException
 	 */
-	public function __call($methodName, $args) {
+	public function __call(string $methodName, array $args): ?string {
 		$attr = lcfirst(substr($methodName, 3));
 		$key = $this->propertyToKey($attr);
 		if (strpos($methodName, 'set') === 0) {
 			$this->setter($key, $args);
+			return null;
 		} elseif (strpos($methodName, 'get') === 0) {
 			return $this->getter($key);
 		} else {
 			throw new \BadFunctionCallException($methodName .
-					' does not exist');
+				' does not exist');
 		}
 	}
 }
